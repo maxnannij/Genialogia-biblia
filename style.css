@@ -1,0 +1,105 @@
+body {
+    font-family: sans-serif;
+    display: flex;
+    margin: 0;
+    height: 100vh;
+    background-color: #333;
+    color: #f0f0f0;
+}
+
+#panel-izquierdo {
+    width: 200px;
+    background-color: #444;
+    padding: 15px;
+    border-right: 2px solid #555;
+    display: flex;
+    flex-direction: column;
+}
+
+#panel-izquierdo h3 {
+    margin-top: 0;
+}
+
+.forma-arrastrable {
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #5a67d8;
+    color: white;
+    text-align: center;
+    cursor: grab;
+    user-select: none;
+}
+
+#lienzo {
+    flex-grow: 1;
+    position: relative; /* Muy importante para jsPlumb */
+    background-image: radial-gradient(#555 1px, transparent 0);
+    background-size: 20px 20px;
+}
+
+/* Estilo base de las celdas que se crean en el lienzo */
+.celda {
+    position: absolute; /* Esencial para poder moverlas */
+    padding: 15px;
+    border: 2px solid #ddd;
+    background-color: #2d3748;
+    color: white;
+    min-width: 100px;
+    min-height: 40px;
+    text-align: center;
+    cursor: move;
+    z-index: 10;
+}
+
+/* Estilos para las diferentes formas */
+.celda.circulo {
+    border-radius: 50%;
+}
+
+.celda.triangulo {
+    width: 0;
+    height: 0;
+    padding: 0;
+    background-color: transparent;
+    border-left: 60px solid transparent;
+    border-right: 60px solid transparent;
+    border-bottom: 100px solid #e53e3e; /* El color del triángulo */
+    border-top: 0;
+}
+
+/* El texto dentro del triángulo necesita un posicionamiento especial */
+.celda.triangulo .nombre-celda {
+    position: absolute;
+    top: 55px; /* Ajustar según tamaño */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    color: white;
+}
+
+
+/* Estilo para la ventana flotante (tooltip) */
+.tooltip-contenido {
+    display: none;
+    position: absolute;
+    bottom: 105%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f0f0f0;
+    color: #1a202c;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 100;
+    width: 200px;
+}
+
+.celda:hover .tooltip-contenido {
+    display: block;
+}
+
+textarea.descripcion {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 5px;
+}

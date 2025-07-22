@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramienta de Diagramas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Panel lateral con las formas para arrastrar -->
+    <div id="panel-izquierdo">
+        <h3>Formas</h3>
+        <div class="forma-arrastrable" data-shape="rectangulo" draggable="true">Rectángulo</div>
+        <div class="forma-arrastrable" data-shape="circulo" draggable="true">Círculo</div>
+        <div class="forma-arrastrable" data-shape="triangulo" draggable="true">Triángulo</div>
+        <hr>
+        <h3>Controles</h3>
+        <button id="guardar">Guardar Diagrama</button>
+        <button id="cargar">Cargar Diagrama</button>
+        <button id="limpiar">Limpiar Lienzo</button>
+    </div>
+
+    <!-- El lienzo principal donde se sueltan y conectan las celdas -->
+    <div id="lienzo">
+        <!-- Las celdas se agregarán aquí dinámicamente -->
+    </div>
+
+    <!-- Incluimos la librería jsPlumb -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsplumb/2.15.6/js/jsplumb.min.js"></script>
+    <!-- Nuestro script personalizado -->
+    <script src="script.js"></script>
+
+</body>
+</html>

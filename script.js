@@ -1,8 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    const panel = document.getElementById('panel-izquierdo');
     const lienzo = document.getElementById('lienzo');
-    let formaArrastrada = null;
+    const formasArrastrables = document.querySelectorAll('.forma-arrastrable');
     let celdaIdCounter = 0;
 
     // Inicializar jsPlumb
@@ -13,28 +12,37 @@ document.addEventListener('DOMContentLoaded', () => {
             ['Arrow', { location: 1, width: 10, length: 10 }]
         ],
         Endpoint: ["Dot", { radius: 5 }],
-        Connector: "StateMachine", // Opciones: "Straight", "Flowchart", "Bezier"
-        PaintStyle: { stroke: '#facc15', strokeWidth: 3 }, // Color de la flecha
+        Connector: "StateMachine",
+        PaintStyle: { stroke: '#facc15', strokeWidth: 3 },
         EndpointStyle: { fill: '#facc15' }
     });
 
-    // --- FUNCIONALIDAD DE ARRASTRAR Y SOLTAR ---
+    // --- FUNCIONALIDAD DE ARRASTRAR Y SOLTAR (VERSIÓN CORREGIDA) ---
 
-    panel.addEventListener('dragstart', (e) => {
-        if (e.target.classList.contains('forma-arrastrable')) {
-            formaArrastrada = e.target.dataset.shape;
-        }
+    // 1. Añadir un listener a cada forma que se puede arrastrar
+    formasArrastrables.forEach(forma => {
+        forma.addEventListener('dragstart', (e) => {
+            // Guardamos el tipo de forma en el objeto de transferencia de datos
+            e.dataTransfer.setData('text/plain', e.target.dataset.shape);
+        });
     });
 
+    // 2. Prevenir el comportamiento por defecto cuando un elemento se arrastra sobre el lienzo
+    // ESTE ES EL PASO MÁS IMPORTANTE PARA QUE 'DROP' FUNCIONE
     lienzo.addEventListener('dragover', (e) => {
-        e.preventDefault(); // Permite que se pueda soltar el elemento aquí
+        e.preventDefault(); 
     });
 
+    // 3. Manejar el evento cuando se suelta la forma en el lienzo
     lienzo.addEventListener('drop', (e) => {
-        e.preventDefault();
-        if (formaArrastrada) {
-            crearCelda(formaArrastrada, e.clientX, e.clientY);
-            formaArrastrada = null;
+        e.preventDefault(); // También es buena práctica aquí
+        const forma = e.dataTransfer.getData('text/plain');
+        if (forma) {
+            // Obtenemos las coordenadas relativas al lienzo
+            const rect = lienzo.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            crearCelda(forma, x, y);
         }
     });
 
@@ -46,11 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
         nuevaCelda.id = id;
         nuevaCelda.className = `celda ${shape}`;
         
-        const rect = lienzo.getBoundingClientRect();
-        nuevaCelda.style.left = `${x - rect.left - 75}px`; // Centrar la celda en el cursor
-        nuevaCelda.style.top = `${y - rect.top - 35}px`;
+        // Centramos la celda donde se soltó el cursor
+        nuevaCelda.style.left = `${x - 75}px`; 
+        nuevaCelda.style.top = `${y - 40}px`;
 
-        // Contenido de la celda (nombre editable, color, tooltip)
         nuevaCelda.innerHTML = `
             <div class="nombre-celda" contenteditable="true">Texto</div>
             <div class="tooltip-contenido">
@@ -66,18 +73,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- HACER LAS CELDAS INTERACTIVAS CON JSPLUMB ---
-
+    // (Esta parte no cambia)
     function hacerCeldaInteractiva(id) {
         const celda = document.getElementById(id);
 
-        // Hacerla arrastrable dentro del lienzo
         instance.draggable(celda, {
             containment: 'parent'
         });
 
-        // Definir como origen y destino de conexiones
         instance.makeSource(celda, {
-            filter: '.nombre-celda', // Solo se puede arrastrar desde el nombre para crear una conexión
+            filter: '.nombre-celda',
             anchor: "Continuous",
             connectorStyle: { stroke: '#facc15', strokeWidth: 3 },
         });
@@ -87,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
             dropOptions: { hoverClass: 'dragHover' }
         });
 
-        // Eventos para cambiar el color
         const colorInput = celda.querySelector('.color-celda');
         colorInput.addEventListener('input', (e) => {
             if (celda.classList.contains('triangulo')) {
@@ -99,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- GUARDAR, CARGAR Y LIMPIAR ---
-
+    // (Esta parte no cambia)
     document.getElementById('guardar').addEventListener('click', guardarDiagrama);
     document.getElementById('cargar').addEventListener('click', cargarDiagrama);
     document.getElementById('limpiar').addEventListener('click', () => {
@@ -108,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             instance.deleteEveryConnection();
             instance.deleteEveryEndpoint();
             celdaIdCounter = 0;
+            localStorage.removeItem('miDiagrama');
         }
     });
 
@@ -134,8 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             conexiones: conexiones,
             contador: celdaIdCounter
         };
-
-        // Guardamos en localStorage como un string JSON
+        
         localStorage.setItem('miDiagrama', JSON.stringify(diagrama));
         alert('¡Diagrama guardado localmente!');
     }
@@ -147,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Limpiar el estado actual antes de cargar
         lienzo.innerHTML = '';
         instance.deleteEveryConnection();
         instance.deleteEveryEndpoint();
@@ -155,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const diagrama = JSON.parse(dataGuardada);
         celdaIdCounter = diagrama.contador || 0;
 
-        // 1. Re-crear todas las celdas
         diagrama.celdas.forEach(dataCelda => {
             const nuevaCelda = document.createElement('div');
             nuevaCelda.id = dataCelda.id;
@@ -185,7 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
             hacerCeldaInteractiva(dataCelda.id);
         });
 
-        // 2. Re-crear todas las conexiones
         diagrama.conexiones.forEach(conn => {
             instance.connect({
                 source: conn.sourceId,

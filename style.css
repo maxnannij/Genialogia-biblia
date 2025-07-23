@@ -3,6 +3,7 @@ body {
     display: flex;
     margin: 0;
     height: 100vh;
+    overflow: hidden; /* Evita barras de scroll innecesarias */
     background-color: #333;
     color: #f0f0f0;
 }
@@ -12,12 +13,7 @@ body {
     background-color: #444;
     padding: 15px;
     border-right: 2px solid #555;
-    display: flex;
-    flex-direction: column;
-}
-
-#panel-izquierdo h3 {
-    margin-top: 0;
+    z-index: 20; /* Asegura que esté por encima del lienzo */
 }
 
 .forma-arrastrable {
@@ -27,31 +23,31 @@ body {
     color: white;
     text-align: center;
     cursor: grab;
-    user-select: none;
+    user-select: none; /* Evita seleccionar el texto al arrastrar */
 }
 
 #lienzo {
     flex-grow: 1;
-    position: relative; /* Muy importante para jsPlumb */
+    position: relative;
     background-image: radial-gradient(#555 1px, transparent 0);
     background-size: 20px 20px;
 }
 
-/* Estilo base de las celdas que se crean en el lienzo */
 .celda {
-    position: absolute; /* Esencial para poder moverlas */
+    position: absolute;
     padding: 15px;
     border: 2px solid #ddd;
     background-color: #2d3748;
     color: white;
     min-width: 100px;
     min-height: 40px;
-    text-align: center;
+    display: flex; /* Para centrar mejor el contenido */
+    justify-content: center;
+    align-items: center;
     cursor: move;
     z-index: 10;
 }
 
-/* Estilos para las diferentes formas */
 .celda.circulo {
     border-radius: 50%;
 }
@@ -63,22 +59,21 @@ body {
     background-color: transparent;
     border-left: 60px solid transparent;
     border-right: 60px solid transparent;
-    border-bottom: 100px solid #e53e3e; /* El color del triángulo */
+    border-bottom: 100px solid #e53e3e;
     border-top: 0;
 }
 
-/* El texto dentro del triángulo necesita un posicionamiento especial */
-.celda.triangulo .nombre-celda {
-    position: absolute;
-    top: 55px; /* Ajustar según tamaño */
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
-    color: white;
+.celda .nombre-celda {
+    padding: 5px;
 }
 
+.celda.triangulo .nombre-celda {
+    position: absolute;
+    top: 50px;
+    width: 100%;
+    text-align: center;
+}
 
-/* Estilo para la ventana flotante (tooltip) */
 .tooltip-contenido {
     display: none;
     position: absolute;
@@ -92,6 +87,7 @@ body {
     border-radius: 5px;
     z-index: 100;
     width: 200px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
 .celda:hover .tooltip-contenido {

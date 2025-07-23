@@ -1,6 +1,9 @@
-document.addEventListener('DOMContentLoaded', () => {
+// En lugar de esperar solo a que el DOM esté listo,
+// esperamos a que jsPlumb esté listo.
+jsPlumb.ready(function() {
+
     // --- Comprobación inicial ---
-    console.log("El script se ha cargado correctamente.");
+    console.log("jsPlumb está listo. Iniciando el script.");
 
     const lienzo = document.getElementById('lienzo');
     const formasArrastrables = document.querySelectorAll('.forma-arrastrable');
@@ -15,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("Formas encontradas:", formasArrastrables.length);
 
     // Inicializar jsPlumb
+    // Ahora estamos seguros de que 'jsPlumb' existe.
     const instance = jsPlumb.getInstance({
         Container: lienzo,
         DragOptions: { cursor: 'pointer', zIndex: 2000 },
@@ -36,11 +40,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     lienzo.addEventListener('dragover', (e) => {
-        e.preventDefault(); // MUY IMPORTANTE: Permite que se pueda soltar
+        e.preventDefault();
     });
 
     lienzo.addEventListener('drop', (e) => {
-        e.preventDefault(); // Previene que el navegador abra el dato como un archivo
+        e.preventDefault();
         const shape = e.dataTransfer.getData('text/plain');
         console.log(`Forma soltada: ${shape}`);
 
@@ -49,8 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
             crearCelda(shape, x, y);
-        } else {
-            console.warn("Se intentó soltar algo sin datos de forma.");
         }
     });
 
@@ -60,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
         nuevaCelda.id = id;
         nuevaCelda.className = `celda ${shape}`;
         
-        // Centrar la celda donde se soltó
         nuevaCelda.style.left = `${x - 75}px`; 
         nuevaCelda.style.top = `${y - 40}px`;
 
@@ -75,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         
         lienzo.appendChild(nuevaCelda);
-        console.log(`Celda creada con id: ${id} en (${x}, ${y})`);
+        console.log(`Celda creada con id: ${id}`);
         hacerCeldaInteractiva(id);
     }
     
@@ -95,6 +96,100 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // El resto de funciones (guardar/cargar) se mantienen igual que en la respuesta anterior
-    // ... (puedes copiar y pegar la sección de guardar/cargar/limpiar de la respuesta anterior aquí)
+    // --- FUNCIONES DE GUARDAR, CARGAR Y LIMPIAR ---
+    
+    document.getElementById('guardar').addEventListener('click', guardarDiagrama);
+    document.getElementById('cargar').addEventListener('click', cargarDiagrama);
+    document.getElementById('limpiar').addEventListener('click', () => {
+        if (confirm('¿Estás seguro de que quieres borrar todo el lienzo?')) {
+            lienzo.innerHTML = '';
+            instance.deleteEveryConnection();
+            instance.deleteEveryEndpoint();
+            celdaIdCounter = 0;
+            localStorage.removeItem('miDiagrama');
+        }
+    });
+    
+    // (Estas funciones no necesitan cambios, pero las incluyo para que tengas el archivo completo)
+    function guardarDiagrama() {
+        const celdas = [];
+        document.querySelectorAll('.celda').forEach(celda => {
+            celdas.push({
+                id: celda.id,
+                clases: celda.className,
+                posicion: { top: celda.style.top, left: celda.style.left },
+                nombre: celda.querySelector('.nombre-celda').innerHTML,
+                descripcion: celda.querySelector('.descripcion').value,
+                color: celda.classList.contains('triangulo') ? celda.style.borderBottomColor : celda.style.backgroundColor
+            });
+        });
+
+        const conexiones = instance.getAllConnections().map(conn => ({
+            sourceId: conn.sourceId,
+            targetId: conn.targetId
+        }));
+
+        const diagrama = {
+            celdas: celdas,
+            conexiones: conexiones,
+            contador: celdaIdCounter
+        };
+        
+        localStorage.setItem('miDiagrama', JSON.stringify(diagrama));
+        alert('¡Diagrama guardado localmente!');
+    }
+    
+    function cargarDiagrama() {
+        const dataGuardada = localStorage.getItem('miDiagrama');
+        if (!dataGuardada) {
+            alert('No hay ningún diagrama guardado.');
+            return;
+        }
+
+        lienzo.innerHTML = '';
+        instance.deleteEveryConnection();
+        instance.deleteEveryEndpoint();
+
+        const diagrama = JSON.parse(dataGuardada);
+        celdaIdCounter = diagrama.contador || 0;
+
+        diagrama.celdas.forEach(dataCelda => {
+            const nuevaCelda = document.createElement('div');
+            nuevaCelda.id = dataCelda.id;
+            nuevaCelda.className = dataCelda.clases;
+            nuevaCelda.style.left = dataCelda.posicion.left;
+            nuevaCelda.style.top = dataCelda.posicion.top;
+
+            nuevaCelda.innerHTML = `
+                <div class="nombre-celda" contenteditable="true">${dataCelda.nombre}</div>
+                <div class="tooltip-contenido">
+                    <p>Descripción detallada:</p>
+                    <textarea class="descripcion" rows="4">${dataCelda.descripcion}</textarea>
+                    <label>Color de fondo:</label>
+                    <input type="color" class="color-celda">
+                </div>
+            `;
+            
+            const colorPicker = nuevaCelda.querySelector('.color-celda');
+            if (nuevaCelda.classList.contains('triangulo')) {
+                nuevaCelda.style.borderBottomColor = dataCelda.color || '#e53e3e';
+                colorPicker.value = dataCelda.color || '#e53e3e';
+            } else {
+                nuevaCelda.style.backgroundColor = dataCelda.color || '#2d3748';
+                colorPicker.value = dataCelda.color || '#2d3748';
+            }
+            
+            lienzo.appendChild(nuevaCelda);
+            hacerCeldaInteractiva(dataCelda.id);
+        });
+
+        diagrama.conexiones.forEach(conn => {
+            instance.connect({
+                source: conn.sourceId,
+                target: conn.targetId
+            });
+        });
+
+        alert('¡Diagrama cargado!');
+    }
 });

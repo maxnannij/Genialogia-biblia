@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prueba de Diagrama (Todo en Uno)</title>
+    <style>
+        /* --- ESTILOS (CSS) --- */
+        body {
+            font-family: sans-serif; display: flex; margin: 0; height: 100vh;
+            overflow: hidden; background-color: #333; color: #f0f0f0;
+        }
+        #panel-izquierdo {
+            width: 200px; background-color: #444; padding: 15px;
+            border-right: 2px solid #555; z-index: 20;
+        }
+        .forma-arrastrable {
+            padding: 10px; margin-bottom: 10px; background-color: #5a67d8;
+            color: white; text-align: center; cursor: grab; user-select: none;
+        }
+        #lienzo {
+            flex-grow: 1; position: relative;
+            background-image: radial-gradient(#555 1px, transparent 0);
+            background-size: 20px 20px;
+        }
+        .celda {
+            position: absolute; padding: 15px; border: 2px solid #ddd;
+            background-color: #2d3748; color: white; min-width: 100px;
+            min-height: 40px; display: flex; justify-content: center;
+            align-items: center; cursor: move; z-index: 10;
+        }
+        .celda.circulo { border-radius: 50%; }
+        .celda.triangulo {
+            width: 0; height: 0; padding: 0; background-color: transparent;
+            border-left: 60px solid transparent; border-right: 60px solid transparent;
+            border-bottom: 100px solid #e53e3e; border-top: 0;
+        }
+        .celda .nombre-celda { padding: 5px; }
+        .celda.triangulo .nombre-celda {
+            position: absolute; top: 50px; width: 100%; text-align: center;
+        }
+        .tooltip-contenido {
+            display: none; position: absolute; bottom: 105%; left: 50%;
+            transform: translateX(-50%); background-color: #f0f0f0;
+            color: #1a202c; border: 1px solid #ccc; padding: 10px;
+            border-radius: 5px; z-index: 100; width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .celda:hover .tooltip-contenido { display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="panel-izquierdo">
+        <h3>Formas</h3>
+        <div class="forma-arrastrable" data-shape="rectangulo" draggable="true">Rectángulo</div>
+        <div class="forma-arrastrable" data-shape="circulo" draggable="true">Círculo</div>
+        <div class="forma-arrastrable" data-shape="triangulo" draggable="true">Triángulo</div>
+    </div>
+
+    <div id="lienzo"></div>
+
+    <!-- ===== ORDEN DE SCRIPTS CRÍTICO ===== -->
+    <!-- 1. PRIMERO CARGAMOS LA LIBRERÍA DESDE INTERNET -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsplumb/2.15.6/js/jsplumb.min.js"></script>
+
+    <!-- 2. DESPUÉS, EJECUTAMOS NUESTRO CÓDIGO QUE USA LA LIBRERÍA -->
+    <script>
+        // --- LÓGICA (JAVASCRIPT) ---
+        jsPlumb.ready(function() {
+            const lienzo = document.getElementById('lienzo');
+            const formasArrastrables = document.querySelectorAll('.forma-arrastrable');
+            let celdaIdCounter = 0;
+
+            const instance = jsPlumb.getInstance({
+                Container: lienzo,
+                DragOptions: { cursor: 'pointer', zIndex: 2000 },
+                ConnectionOverlays: [['Arrow', { location: 1, width: 10, length: 10 }]],
+                Endpoint: ["Dot", { radius: 5 }],
+                Connector: "StateMachine",
+            });
+
+            formasArrastrables.forEach(forma => {
+                forma.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', e.target.dataset.shape);
+                });
+            });
+
+            lienzo.addEventListener('dragover', (e) => { e.preventDefault(); });
+            lienzo.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const shape = e.dataTransfer.getData('text/plain');
+                if (shape) {
+                    const rect = lienzo.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    crearCelda(shape, x, y);
+                }
+            });
+
+            function crearCelda(shape, x, y) {
+                const id = `celda_${celdaIdCounter++}`;
+                const nuevaCelda = document.createElement('div');
+                nuevaCelda.id = id;
+                nuevaCelda.className = `celda ${shape}`;
+                nuevaCelda.style.left = `${x - 75}px`; 
+                nuevaCelda.style.top = `${y - 40}px`;
+                nuevaCelda.innerHTML = `<div class="nombre-celda" contenteditable="true">Texto</div>`;
+                lienzo.appendChild(nuevaCelda);
+                hacerCeldaInteractiva(id);
+            }
+            
+            function hacerCeldaInteractiva(id) {
+                const celda = document.getElementById(id);
+                instance.draggable(celda, { containment: 'parent' });
+                instance.makeSource(celda, { filter: '.nombre-celda', anchor: "Continuous" });
+                instance.makeTarget(celda, { anchor: "Continuous" });
+            }
+        });
+    </script>
+</body>
+</html>
